@@ -1,0 +1,19 @@
+{
+  "dist_root": ".\\runtime",
+  "release_repo": "m-sec-org/c-eyes",
+  "cache_dir": ".\\runtime\\_downloads",
+  "runtime_targets": {
+    "windows-amd64": {
+      "bundle_dir": "dist-windows-amd64-public",
+      "binary": "c-eyes.exe"
+    },
+    "linux-amd64": {
+      "bundle_dir": "dist-linux-amd64-public",
+      "binary": "c-eyes"
+    },
+    "linux-arm64": {
+      "bundle_dir": "dist-linux-arm64-public",
+      "binary": "c-eyes"
+    }
+  }
+}

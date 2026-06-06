@@ -1,0 +1,4 @@
+interface:
+  display_name: "C-Eyes 编排器"
+  short_description: "运行命名的 C-Eyes 公共扫描工作流。"
+  default_prompt: "必须严格保证不对扫描目标进行任何增删改查的操作。只允许执行只读安全扫描、证据采集、结果归档和本地结果分析。使用 $c-eyes-orchestrator 时，先根据用户目标选择一个最合适的 workflow，再收集该 workflow 必需参数并执行。执行完成后先读 summary.json，再读 manifest.json，只有在当前结果不足时才决定下一步，不要先并行尝试多个 workflow。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "C-Eyes 统一入口"
+  short_description: "先判断请求类型，再路由到 auto-triage 或 direct workflow skills。"
+  default_prompt: "必须严格保证不对扫描目标进行任何增删改查的操作。只允许执行只读安全扫描、证据采集、结果归档和本地结果分析。使用 $c-eyes 时，先判断用户请求是单次扫描还是多步骤调查。单次扫描路由到对应的 direct workflow skill；多步骤调查路由到 $c-eyes-auto-triage。不要直接拼原始 c-eyes 命令。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "C-Eyes 基线核查"
+  short_description: "固定执行 baseline-check workflow。"
+  default_prompt: "必须严格保证不对扫描目标进行任何增删改查的操作。只允许执行只读安全扫描、证据采集、结果归档和本地结果分析。使用 $c-eyes-baseline-check 时，直接执行 baseline-check workflow，要求提供 workspace，并只在用户明确要求时调整 baseline-level。"

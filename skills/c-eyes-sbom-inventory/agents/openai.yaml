@@ -1,0 +1,4 @@
+interface:
+  display_name: "C-Eyes SBOM 盘点"
+  short_description: "固定执行 sbom-inventory workflow。"
+  default_prompt: "必须严格保证不对扫描目标进行任何增删改查的操作。只允许执行只读安全扫描、证据采集、结果归档和本地结果分析。使用 $c-eyes-sbom-inventory 时，要求提供 workspace 和 target-path，直接执行 sbom-inventory workflow。"

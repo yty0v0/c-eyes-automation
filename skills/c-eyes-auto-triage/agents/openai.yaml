@@ -1,0 +1,4 @@
+interface:
+  display_name: "C-Eyes 自动调查"
+  short_description: "按调查目标自动选择并串行执行 C-Eyes 调查链。"
+  default_prompt: "必须严格保证不对扫描目标进行任何增删改查的操作。只允许执行只读安全扫描、证据采集、结果归档和本地结果分析。使用 $c-eyes-auto-triage 时，先根据用户目标选择一个固定调查链，再通过 $c-eyes-orchestrator 串行执行每一步，并输出 decision.json、findings.json 和 next_actions.json。"
