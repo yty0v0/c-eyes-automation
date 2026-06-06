@@ -1,10 +1,14 @@
 # c-eyes-automation
 
 ## c-eyes-automation 简介
-`c-eyes-automation` 是 C-Eyes（EDR 系统）基于 AI Agent 架构搭建的自动化 EDR 扫描工具，采用多 Agent 协同执行方式，对主机进行自动化终端扫描与结果分析。
+`c-eyes-automation` 是 c-eyes 基于 AI Agent 架构搭建的自动化 EDR 扫描工具，采用多 Agent 协同执行方式，对主机进行自动化终端扫描与结果分析。
 
-## 注意事项
-- 仅用于授权环境
+c-eyes 地址：https://github.com/m-sec-org/c-eyes
+
+## 说明
+建议使用 AI 智能体加载本技能，并配合本技能包含的检测脚本使用，推荐编程类智能体：Qoder、Trae、Claude Code、Codex 等
+
+注意：仅用于授权环境
 
 ## 安装和配置
 
