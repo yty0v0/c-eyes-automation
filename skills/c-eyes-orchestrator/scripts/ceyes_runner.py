@@ -149,16 +149,7 @@ def resolve_path_value(raw: str | None, base_dir: Path | None) -> Path | None:
 
 
 def default_bundled_dist_root(repo_root: Path) -> Path:
-    candidates = [
-        (repo_root / "runtime").resolve(),
-        (repo_root / "c-eyes-skill-pack" / "runtime").resolve(),
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    if repo_root.name == "c-eyes-skill-pack":
-        return candidates[0]
-    return candidates[1]
+    return (repo_root / "runtime").resolve()
 
 
 def default_cache_dir(dist_root: Path) -> Path:
@@ -229,7 +220,7 @@ def resolve_runtime_source(
     config_dir: Path | None,
     skill_root: Path,
 ) -> RuntimeSource:
-    repo_root = skill_root.parent.parent.parent
+    repo_root = skill_root.parent.parent
     dist_root = resolve_dist_root(args, config, config_dir, repo_root)
     return RuntimeSource(
         dist_root=dist_root,

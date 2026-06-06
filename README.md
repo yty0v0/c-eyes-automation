@@ -16,11 +16,11 @@ c-eyes 地址：https://github.com/m-sec-org/c-eyes
 
 Windows 手动下载脚本:
 ```powershell
-python .\c-eyes-automation\skills\c-eyes-orchestrator\scripts\ceyes_runner.py --download-only
+python .\skills\c-eyes-orchestrator\scripts\ceyes_runner.py --download-only
 ```
 Linux 手动下载脚本:
 ```bash
-python3 ./c-eyes-automation/skills/c-eyes-orchestrator/scripts/ceyes_runner.py --download-only
+python3 ./skills/c-eyes-orchestrator/scripts/ceyes_runner.py --download-only
 ```
 
 如果需要走本地代理，可以先设置：
@@ -96,7 +96,7 @@ workspace/<task>/report_result/
 要求：
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/host-triage
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 先做 dry-run，再正式执行
 - 执行后优先读取 workspace/host-triage/report_result/summary.md 和 report.html
 ```
@@ -112,7 +112,7 @@ workspace/<task>/report_result/
 - 操作系统：Windows 或 Linux
 - target-path：xxxxx
 - workspace：当前目录下的 workspace/filescan-risk
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 执行后优先读取 workspace/filescan-risk/report_result/summary.md 和 report.html
 ```
 
@@ -126,7 +126,7 @@ workspace/<task>/report_result/
 要求：
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/eventlog-timeline
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - time-window：24h
 - 执行后优先读取 workspace/eventlog-timeline/report_result/summary.md 和 report.html
 ```
@@ -141,7 +141,7 @@ workspace/<task>/report_result/
 要求：
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/network-inventory
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 只有在我明确要求时才使用 reachable-segments
 - 执行后优先读取 workspace/network-inventory/report_result/summary.md 和 report.html
 ```
@@ -157,7 +157,7 @@ workspace/<task>/report_result/
 - 操作系统：Windows 或 Linux
 - target-path：xxxxx（web-path）
 - workspace：当前目录下的 workspace/sbom-inventory
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 执行后优先读取 workspace/sbom-inventory/report_result/summary.md 和 report.html
 ```
 
@@ -171,7 +171,7 @@ workspace/<task>/report_result/
 要求：
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/baseline-check
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - baseline-level：number (可选1/2/3/4 四个级别)
 - 执行后优先读取 workspace/baseline-check/report_result/summary.md 和 report.html
 ```
@@ -188,7 +188,7 @@ workspace/<task>/report_result/
 - 操作系统：Windows 或 Linux
 - target-path：xxxxxx
 - workspace：当前目录下的 workspace/auto-file-investigation
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 最终优先读取 workspace/auto-file-investigation/report_result/summary.md 和 report.html
 ```
 
@@ -203,7 +203,7 @@ workspace/<task>/report_result/
 - 调查目标：host-investigation
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/auto-host-investigation
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 最终优先读取 workspace/auto-host-investigation/report_result/summary.md 和 report.html
 ```
 
@@ -218,7 +218,7 @@ workspace/<task>/report_result/
 - 调查目标：baseline-investigation
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/auto-baseline-investigation
-- runtime：默认自动下载到 .\c-eyes-automation\runtime
+- runtime：默认自动下载到 .\runtime
 - 最终优先读取 workspace/auto-baseline-investigation/report_result/summary.md 和 report.html
 ```
 
@@ -248,4 +248,3 @@ workspace/<task>/report_result/
 - `findings.json`
 - `next_actions.json`
 - 需要下钻时再看 `steps/`
-
