@@ -58,7 +58,7 @@ workspace/
 ```
 
 所有结果都会写入你指定的 `workspace/<task>/` 目录。  
-最终人类可读报告固定在：
+最终可读报告固定在：
 
 ```text
 workspace/<task>/report_result/
