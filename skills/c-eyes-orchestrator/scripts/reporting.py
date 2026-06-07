@@ -24,7 +24,7 @@ SEVERITY_ORDER = {
 }
 
 SEVERITY_LABELS = {
-    "critical": "严重",
+    "critical": "高危",
     "high": "高危",
     "medium": "中危",
     "low": "低危",
@@ -201,6 +201,54 @@ def stringify_value(value: Any) -> str:
     return str(value)
 
 
+def nested_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def nested_value(record: dict[str, Any], *path: str) -> Any:
+    current: Any = record
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def risk_assessment_dict(record: dict[str, Any]) -> dict[str, Any]:
+    return nested_dict(record.get("risk_assessment") or record.get("riskAssessment"))
+
+
+def local_analysis_dict(record: dict[str, Any]) -> dict[str, Any]:
+    return nested_dict(record.get("local_analysis") or record.get("localAnalysis"))
+
+
+def cloud_analysis_dict(record: dict[str, Any]) -> dict[str, Any]:
+    return nested_dict(record.get("cloud_analysis") or record.get("cloudAnalysis"))
+
+
+def float_or_none(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def infer_record_risk_score(record: dict[str, Any]) -> float | None:
+    for value in (
+        record.get("risk_score"),
+        record.get("riskScore"),
+        risk_assessment_dict(record).get("risk_score"),
+        risk_assessment_dict(record).get("riskScore"),
+        record.get("score"),
+    ):
+        score = float_or_none(value)
+        if score is not None:
+            return score
+    return None
+
+
 def normalize_severity(value: Any) -> str:
     if value is None:
         return "unknown"
@@ -257,6 +305,7 @@ def normalize_severity(value: Any) -> str:
 
 
 def infer_record_severity(record: dict[str, Any]) -> str:
+    nested_risk = risk_assessment_dict(record)
     for key in (
         "severity",
         "risk_level",
@@ -275,6 +324,16 @@ def infer_record_severity(record: dict[str, Any]) -> str:
             severity = normalize_severity(record.get(key))
             if severity != "unknown":
                 return severity
+        if key in nested_risk:
+            severity = normalize_severity(nested_risk.get(key))
+            if severity != "unknown":
+                return severity
+
+    nested_score = infer_record_risk_score(record)
+    if nested_score is not None:
+        severity = normalize_severity(nested_score)
+        if severity != "unknown":
+            return severity
 
     status = str(record.get("status") or record.get("result") or "").strip().lower()
     if status in STATUS_SEVERITY:
@@ -310,8 +369,17 @@ def compact_join(parts: list[str], limit: int = 3) -> str:
 def infer_yara_evidence(record: dict[str, Any]) -> tuple[str | None, str | None]:
     details: list[str] = []
 
-    for key in ("yara_results", "matched_rules", "matchedRules", "rule_matches", "ruleMatches"):
-        value = record.get(key)
+    candidate_values = [
+        record.get("yara_results"),
+        record.get("matched_rules"),
+        record.get("matchedRules"),
+        record.get("rule_matches"),
+        record.get("ruleMatches"),
+        local_analysis_dict(record).get("yara_results"),
+        local_analysis_dict(record).get("matched_rules"),
+        local_analysis_dict(record).get("matchedRules"),
+    ]
+    for value in candidate_values:
         if not isinstance(value, list):
             continue
         for item in value[:3]:
@@ -338,6 +406,8 @@ def infer_yara_evidence(record: dict[str, Any]) -> tuple[str | None, str | None]
         or record.get("ruleName")
         or record.get("yara_rule")
         or record.get("yaraRule")
+        or local_analysis_dict(record).get("rule_name")
+        or local_analysis_dict(record).get("ruleName")
     )
     if single_rule:
         rule_details = [f"rule={single_rule}"]
@@ -352,16 +422,43 @@ def infer_yara_evidence(record: dict[str, Any]) -> tuple[str | None, str | None]
 
 
 def infer_cloud_evidence(record: dict[str, Any]) -> tuple[str | None, str | None]:
+    cloud_analysis = cloud_analysis_dict(record)
     labels = normalize_list_strings(
         record.get("threat_labels")
         or record.get("threatLabels")
         or record.get("cloud_labels")
         or record.get("cloudLabels")
+        or cloud_analysis.get("threat_labels")
+        or cloud_analysis.get("threatLabels")
+        or cloud_analysis.get("cloud_labels")
+        or cloud_analysis.get("cloudLabels")
     )
-    malicious_votes = stringify_value(record.get("malicious_votes") or record.get("maliciousVotes"))
-    total_engines = stringify_value(record.get("total_engines") or record.get("totalEngines"))
-    detection_ratio = stringify_value(record.get("detection_ratio") or record.get("detectionRatio"))
-    vendor = stringify_value(record.get("cloud_vendor") or record.get("cloudVendor") or record.get("vendor"))
+    malicious_votes = stringify_value(
+        record.get("malicious_votes")
+        or record.get("maliciousVotes")
+        or cloud_analysis.get("malicious_votes")
+        or cloud_analysis.get("maliciousVotes")
+    )
+    total_engines = stringify_value(
+        record.get("total_engines")
+        or record.get("totalEngines")
+        or cloud_analysis.get("total_engines")
+        or cloud_analysis.get("totalEngines")
+    )
+    detection_ratio = stringify_value(
+        record.get("detection_ratio")
+        or record.get("detectionRatio")
+        or cloud_analysis.get("detection_ratio")
+        or cloud_analysis.get("detectionRatio")
+    )
+    vendor = stringify_value(
+        record.get("cloud_vendor")
+        or record.get("cloudVendor")
+        or record.get("vendor")
+        or cloud_analysis.get("cloud_vendor")
+        or cloud_analysis.get("cloudVendor")
+        or cloud_analysis.get("vendor")
+    )
 
     fragments: list[str] = []
     if vendor:
@@ -387,6 +484,10 @@ def infer_record_evidence_source(record: dict[str, Any]) -> tuple[str, str, str]
     cloud_source, cloud_detail = infer_cloud_evidence(record)
     if cloud_source and cloud_detail:
         return cloud_source, "云平台分析", cloud_detail
+
+    local_analysis = local_analysis_dict(record)
+    if local_analysis.get("local_matched") is True:
+        return "local", "本地规则命中", "Local: local_matched=true"
 
     status = stringify_value(record.get("status") or record.get("result"))
     if status:
@@ -534,16 +635,25 @@ def build_finding_row(
     }
 
 
-def select_sample_rows(rows: list[dict[str, Any]], limit: int = 8) -> list[dict[str, Any]]:
-    ordered = sorted(
+def sort_rows_by_priority(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
         rows,
         key=lambda item: (
+            float_or_none(item.get("risk_score")) or 0,
             SEVERITY_ORDER.get(item["severity"], 0),
+            1 if item.get("local_matched") else 0,
+            1 if item.get("cloud_queried") else 0,
             1 if item.get("status") else 0,
             item.get("title") or "",
         ),
         reverse=True,
     )
+
+
+def select_sample_rows(rows: list[dict[str, Any]], limit: int = 8) -> list[dict[str, Any]]:
+    ordered = sort_rows_by_priority(rows)
+    if limit <= 0:
+        return ordered
     return ordered[:limit]
 
 
@@ -2136,7 +2246,7 @@ def write_report_bundle(workspace: Path, report: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 SEVERITY_LABELS = {
-    "critical": "严重",
+    "critical": "高危",
     "high": "高危",
     "medium": "中危",
     "low": "低危",
@@ -2282,6 +2392,12 @@ def infer_record_evidence(record: dict[str, Any]) -> str:
             parts.append(f"{key}={value}")
         if len(parts) >= 3:
             break
+    score = infer_record_risk_score(record)
+    if score and score > 0:
+        parts.insert(0, f"risk_score={int(score) if score.is_integer() else score}")
+    target_type = stringify_value(record.get("target_type") or record.get("targetType"))
+    if target_type:
+        parts.append(f"target_type={target_type}")
     if parts:
         return " | ".join(parts)
     return summarize_record(record, max_fields=5)
@@ -2334,7 +2450,7 @@ def display_asset_status(value: str) -> str:
 
 def display_event_level(value: str) -> str:
     mapping = {
-        "critical": "严重",
+        "critical": "高危",
         "error": "错误",
         "warning": "告警",
         "warn": "告警",
@@ -2366,12 +2482,13 @@ def build_generic_table_section(
     empty_message: str,
     filters: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    usable_filters = [item for item in (filters or []) if item.get("options")]
     return {
         "title": title,
         "columns": columns,
         "rows": rows,
         "empty_message": empty_message,
-        "filters": filters or [],
+        "filters": usable_filters,
     }
 
 
@@ -2400,11 +2517,33 @@ def make_status_filter_options(rows: list[dict[str, Any]], key: str) -> list[str
     return sorted(set(values))
 
 
+def make_attr_filter_options(rows: list[dict[str, Any]], key: str, ordered: list[str] | None = None) -> list[str]:
+    values: set[str] = set()
+    ordered_lookup = set(ordered or [])
+    for row in rows:
+        attrs = ensure_dict(row.get("_attrs"))
+        value = stringify_value(attrs.get(key))
+        if not value:
+            value = stringify_value(row.get(key))
+        if value:
+            values.add(value)
+    if not ordered:
+        return sorted(values)
+    ordered_values = [item for item in ordered if item in values]
+    remaining = sorted(values - ordered_lookup)
+    return ordered_values + remaining
+
+
 def severity_bar_items(counts: dict[str, int]) -> list[dict[str, Any]]:
-    return [
-        {"name": SEVERITY_LABELS[key], "count": int(counts.get(key, 0)), "color": SEVERITY_COLORS[key]}
-        for key in ("critical", "high", "medium", "low", "info", "unknown")
+    high_count = int(counts.get("critical", 0)) + int(counts.get("high", 0))
+    items = [
+        {"name": "高危", "count": high_count, "color": SEVERITY_COLORS["high"]},
+        {"name": "中危", "count": int(counts.get("medium", 0)), "color": SEVERITY_COLORS["medium"]},
+        {"name": "低危", "count": int(counts.get("low", 0)), "color": SEVERITY_COLORS["low"]},
+        {"name": "信息", "count": int(counts.get("info", 0)), "color": SEVERITY_COLORS["info"]},
+        {"name": "未知", "count": int(counts.get("unknown", 0)), "color": SEVERITY_COLORS["unknown"]},
     ]
+    return [item for item in items if int(item.get("count", 0)) > 0]
 
 
 def named_count_items(named_counts: dict[str, int], palette: list[str] | None = None) -> list[dict[str, Any]]:
@@ -2668,12 +2807,24 @@ def build_risk_finding_row(record: dict[str, Any], source_path: str, collection_
     status = stringify_value(record.get("status") or record.get("result"))
     evidence_source, evidence_source_label, evidence_source_detail = infer_record_evidence_source(record)
     category = infer_record_category(record, evidence_source_label)
+    risk_assessment = risk_assessment_dict(record)
+    local_analysis = local_analysis_dict(record)
+    cloud_analysis = cloud_analysis_dict(record)
+    risk_score = infer_record_risk_score(record)
+    target_path = stringify_value(record.get("target_path") or record.get("targetPath") or record.get("path"))
+    risk_level_raw = stringify_value(
+        record.get("risk_level")
+        or record.get("riskLevel")
+        or risk_assessment.get("risk_level")
+        or risk_assessment.get("riskLevel")
+    )
+    severity_ui = "high" if severity in {"critical", "high"} else severity
     return {
         "severity": severity,
         "severity_label": SEVERITY_LABELS[severity],
         "source_path": source_path,
         "collection": collection_name,
-        "title": infer_record_title(record),
+        "title": target_path or infer_record_title(record),
         "category": category,
         "status": status,
         "status_label": status,
@@ -2683,7 +2834,14 @@ def build_risk_finding_row(record: dict[str, Any], source_path: str, collection_
         "evidence": infer_record_evidence(record),
         "summary": summarize_record(record, max_fields=7),
         "raw": compact_json(record, 300),
-        "_attrs": {"severity": severity, "source": evidence_source},
+        "risk_score": risk_score or 0,
+        "risk_level_raw": risk_level_raw,
+        "target_path": target_path,
+        "target_type": stringify_value(record.get("target_type") or record.get("targetType")),
+        "analysis_mode": stringify_value(risk_assessment.get("analysis_mode") or risk_assessment.get("analysisMode")),
+        "local_matched": bool(local_analysis.get("local_matched")),
+        "cloud_queried": bool(cloud_analysis.get("cloud_queried")),
+        "_attrs": {"severity-ui": severity_ui, "source": evidence_source},
     }
 
 
@@ -2818,7 +2976,6 @@ def build_output_digest(output_path: str, workspace: Path, workflow: str | None 
             builder = build_eventlog_row
 
         rows = [builder(item, rel_path, "collection.rows") for item in coerce_records(raw_rows)]
-        attention_rows = [row for row in rows if row.get("attention")]
         severity_counts = severity_counts_template()
         for row in rows:
             add_severity_count(severity_counts, row["severity"])
@@ -2872,10 +3029,10 @@ def build_output_digest(output_path: str, workspace: Path, workflow: str | None 
         digest.update(
             {
                 "record_count": len(rows),
-                "flagged_count": len(attention_rows),
+                "flagged_count": 0,
                 "severity_counts": severity_counts,
                 "table_rows": rows,
-                "highlight_rows": attention_rows,
+                "highlight_rows": [],
                 "chart_items": named_count_items(chart_counts),
             }
         )
@@ -2893,24 +3050,27 @@ def build_output_digest(output_path: str, workspace: Path, workflow: str | None 
         rows = [build_risk_finding_row(item, rel_path, collection_name) for item in coerce_records(raw_items)]
         all_rows.extend(rows)
 
+    positive_rows = [row for row in all_rows if is_positive_risk_row(row)]
+    positive_rows = sort_rows_by_priority(positive_rows)
     severity_counts = severity_counts_template()
-    for row in all_rows:
+    for row in positive_rows:
         add_severity_count(severity_counts, row["severity"])
 
     digest.update(
         {
-            "record_count": len(all_rows),
-            "flagged_count": len([row for row in all_rows if row["severity"] in {"critical", "high", "medium"}]),
+            "record_count": len(positive_rows),
+            "flagged_count": len(positive_rows),
             "severity_counts": severity_counts,
             "table_columns": [
                 {"key": "severity_label", "label": "级别"},
+                {"key": "risk_score", "label": "分值"},
                 {"key": "title", "label": "标题"},
                 {"key": "evidence_source_label", "label": "结论来源"},
                 {"key": "evidence_source_detail", "label": "来源证据"},
                 {"key": "evidence", "label": "关键证据"},
             ],
-            "table_rows": all_rows,
-            "highlight_rows": select_sample_rows(all_rows, limit=20),
+            "table_rows": positive_rows,
+            "highlight_rows": positive_rows,
             "chart_title": "风险级别分布",
             "chart_items": severity_bar_items(severity_counts),
         }
@@ -2931,7 +3091,7 @@ def flatten_output_findings(output_digests: list[dict[str, Any]]) -> list[dict[s
     rows: list[dict[str, Any]] = []
     for digest in output_digests:
         rows.extend(digest.get("highlight_rows", []))
-    return select_sample_rows(rows, limit=30)
+    return sort_rows_by_priority(rows)
 
 
 def aggregate_severity_counts(output_digests: list[dict[str, Any]]) -> dict[str, int]:
@@ -2939,6 +3099,17 @@ def aggregate_severity_counts(output_digests: list[dict[str, Any]]) -> dict[str,
     for digest in output_digests:
         merge_severity_counts(counts, ensure_dict(digest.get("severity_counts")))
     return counts
+
+
+def is_positive_risk_row(row: dict[str, Any]) -> bool:
+    score = float_or_none(row.get("risk_score")) or 0
+    if score > 0:
+        return True
+    if row.get("severity") in {"critical", "high", "medium", "low"}:
+        return True
+    if row.get("local_matched") is True:
+        return True
+    return False
 
 
 def build_workflow_commands(manifest: dict[str, Any], workspace: Path) -> tuple[list[dict[str, Any]], list[str]]:
@@ -2977,8 +3148,7 @@ def build_output_cards(output_digests: list[dict[str, Any]]) -> list[dict[str, A
         count_label = {
             "risk": "风险项",
             "baseline": "不符合项",
-            "collection": "关注记录",
-        }.get(profile, "记录")
+        }.get(profile)
         cards.append(
             {
                 "path": digest.get("path"),
@@ -3034,9 +3204,13 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
             build_metric("不符合项", total_counts["fail"], tone="high"),
             build_metric("符合项", total_counts["pass"], tone="info"),
             build_metric("符合率", f"{total_counts['compliance_rate']}%", tone="info"),
-            build_metric("待确认/信息项", total_counts["unknown"] + total_counts["informational"] + total_counts["pending"], tone="medium"),
-            build_metric("输出文件", len(output_digests), tone="info"),
         ]
+        if total_counts["unknown"] > 0:
+            metrics.append(build_metric("待确认", total_counts["unknown"], tone="medium"))
+        if total_counts["informational"] > 0:
+            metrics.append(build_metric("信息项", total_counts["informational"], tone="info"))
+        if total_counts["pending"] > 0:
+            metrics.append(build_metric("待执行", total_counts["pending"], tone="medium"))
         chart_summary = {
             "type": "named",
             "title": "基线结果分布",
@@ -3048,6 +3222,7 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
                 {"name": "待执行", "count": total_counts["pending"], "color": "#667085"},
             ],
         }
+        chart_summary["items"] = [item for item in chart_summary["items"] if int(item["count"]) > 0]
         presentation.update(
             {
                 "primary_section": build_generic_table_section(
@@ -3066,7 +3241,7 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
                     all_rows,
                     "没有可展示的基线结果。",
                     filters=[
-                        make_filter_definition("判定结果", "bucket", ["fail", "pass", "unknown", "informational", "pending"]),
+                        make_filter_definition("判定结果", "bucket", make_attr_filter_options(all_rows, "bucket", ["fail", "pass", "unknown", "informational", "pending"])),
                         make_filter_definition("分类", "category", make_status_filter_options(all_rows, "category")),
                     ],
                 ),
@@ -3086,10 +3261,8 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
         )
     elif profile == "collection":
         all_rows: list[dict[str, Any]] = []
-        attention_rows: list[dict[str, Any]] = []
         for digest in output_digests:
             all_rows.extend(digest.get("table_rows", []))
-            attention_rows.extend(digest.get("highlight_rows", []))
         output_columns = output_digests[0].get("table_columns", []) if output_digests else []
 
         if workflow == "network-inventory":
@@ -3101,8 +3274,6 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
                 build_metric("资产总数", len(all_rows), tone="info"),
                 build_metric("受管资产", managed, tone="info"),
                 build_metric("未纳管资产", unmanaged, tone="medium"),
-                build_metric("需关注记录", len(attention_rows), tone="medium"),
-                build_metric("输出文件", len(output_digests), tone="info"),
             ]
             chart_summary = {"type": "named", "title": "资产状态分布", "items": chart_items}
             filters = [
@@ -3111,14 +3282,14 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
             ]
             conclusion = f"{workflow_display_name(workflow)}已完成，共收集 {len(all_rows)} 条资产记录。"
             next_action = "优先按资产状态、IP、系统类型筛选结果，再决定是否继续做更深入的主机或文件排查。"
+            primary_title = "内网资产清单"
+            empty_message = "没有可展示的资产记录。"
         elif workflow == "eventlog-timeline":
             chart_items = output_digests[0].get("chart_items", []) if output_digests else []
             metrics = [
                 build_metric("执行状态", status_label(status), tone="info"),
                 build_metric("日志总数", len(all_rows), tone="info"),
-                build_metric("需关注记录", len(attention_rows), tone="medium"),
                 build_metric("数据源", len(set(stringify_value(row.get("source")) for row in all_rows if stringify_value(row.get("source")))), tone="info"),
-                build_metric("输出文件", len(output_digests), tone="info"),
             ]
             chart_summary = {"type": "named", "title": "事件级别分布", "items": chart_items}
             filters = [
@@ -3128,34 +3299,29 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
             ]
             conclusion = f"{workflow_display_name(workflow)}已完成，共收集 {len(all_rows)} 条日志记录。"
             next_action = "先按时间、事件级别、来源和结果筛选，再围绕具体进程、用户或远端 IP 做人工判断。"
+            primary_title = "日志采集结果"
+            empty_message = "没有可展示的日志记录。"
         else:
             chart_summary = {"type": "named", "title": "记录分布", "items": output_digests[0].get("chart_items", []) if output_digests else []}
             metrics = [
                 build_metric("执行状态", status_label(status), tone="info"),
                 build_metric("记录总数", len(all_rows), tone="info"),
-                build_metric("需关注记录", len(attention_rows), tone="medium"),
-                build_metric("输出文件", len(output_digests), tone="info"),
             ]
             filters = []
             conclusion = f"{workflow_display_name(workflow)}已完成，共收集 {len(all_rows)} 条记录。"
             next_action = "先筛选目标组件或分类，再决定是否进入后续调查链。"
+            primary_title = "采集结果明细"
+            empty_message = "没有可展示的采集结果。"
 
-        findings_items = attention_rows[:50]
+        findings_items = []
         overall_severity = "info" if status in {"ok", "completed", "dry-run"} else "medium" if status == "blocked" else "high"
         presentation.update(
             {
                 "primary_section": build_generic_table_section(
-                    "需关注记录",
-                    output_columns,
-                    attention_rows,
-                    "当前没有额外标记为需关注的记录。",
-                    filters=filters,
-                ),
-                "secondary_section": build_generic_table_section(
-                    "采集结果明细",
+                    primary_title,
                     output_columns,
                     all_rows,
-                    "没有可展示的数据采集结果。",
+                    empty_message,
                     filters=filters,
                 ),
             }
@@ -3173,13 +3339,20 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
 
         metrics = [
             build_metric("执行状态", status_label(status), tone="info"),
-            build_metric("严重/高危", severity_counts.get("critical", 0) + severity_counts.get("high", 0), tone="high"),
-            build_metric("中危", severity_counts.get("medium", 0), tone="medium"),
-            build_metric("低危/信息", severity_counts.get("low", 0) + severity_counts.get("info", 0), tone="info"),
-            build_metric("重点风险项", len([row for row in findings_items if row["severity"] in {"critical", "high", "medium"}]), tone="high"),
+            build_metric("重点风险项", len(findings_items), tone="high"),
             build_metric("主要结论来源", top_source or "无", tone="info"),
-            build_metric("输出文件", len(output_digests), tone="info"),
         ]
+        high_count = severity_counts.get("critical", 0) + severity_counts.get("high", 0)
+        if high_count > 0:
+            metrics.insert(1, build_metric("高危", high_count, tone="high"))
+        if severity_counts.get("medium", 0) > 0:
+            metrics.insert(len(metrics) - 2, build_metric("中危", severity_counts.get("medium", 0), tone="medium"))
+        if severity_counts.get("low", 0) > 0:
+            metrics.insert(len(metrics) - 2, build_metric("低危", severity_counts.get("low", 0), tone="info"))
+        if severity_counts.get("info", 0) > 0:
+            metrics.insert(len(metrics) - 2, build_metric("信息", severity_counts.get("info", 0), tone="info"))
+        if severity_counts.get("unknown", 0) > 0:
+            metrics.insert(len(metrics) - 2, build_metric("待确认", severity_counts.get("unknown", 0), tone="medium"))
         chart_summary = {"type": "severity", "title": "风险级别分布", "counts": severity_counts}
         presentation.update(
             {
@@ -3187,6 +3360,7 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
                     "重点风险信息",
                     [
                         {"key": "severity_label", "label": "级别"},
+                        {"key": "risk_score", "label": "分值"},
                         {"key": "title", "label": "标题"},
                         {"key": "evidence_source_label", "label": "结论来源"},
                         {"key": "evidence_source_detail", "label": "来源证据"},
@@ -3195,7 +3369,7 @@ def build_workflow_report(workspace: Path, manifest: dict[str, Any], summary: di
                     findings_items,
                     "未发现重点风险项。",
                     filters=[
-                        make_filter_definition("级别", "severity", ["critical", "high", "medium", "low", "info", "unknown"]),
+                        make_filter_definition("级别", "severity-ui", make_attr_filter_options(findings_items, "severity-ui", ["high", "medium", "low", "info", "unknown"])),
                         make_filter_definition("结论来源", "source", make_status_filter_options(findings_items, "evidence_source")),
                     ],
                 ),
@@ -3338,7 +3512,10 @@ def build_investigation_report(
                 "evidence_source_label": source_label,
                 "evidence_source_detail": "调查链聚合结果",
                 "evidence": " | ".join(evidence_paths[:3]),
-                "_attrs": {"severity": severity, "workflow": stringify_value(item.get("workflow")).lower()},
+                "_attrs": {
+                    "severity-ui": "high" if severity in {"critical", "high"} else severity,
+                    "workflow": stringify_value(item.get("workflow")).lower(),
+                },
             }
         )
 
@@ -3376,7 +3553,7 @@ def build_investigation_report(
             rendered_findings,
             "当前没有关键调查发现。",
             filters=[
-                make_filter_definition("级别", "severity", ["critical", "high", "medium", "low", "info", "unknown"]),
+                make_filter_definition("级别", "severity-ui", make_attr_filter_options(rendered_findings, "severity-ui", ["high", "medium", "low", "info", "unknown"])),
                 make_filter_definition("来源流程", "workflow", make_status_filter_options(rendered_findings, "workflow")),
             ],
         ),
@@ -3416,7 +3593,7 @@ def build_investigation_report(
         "metrics": [
             build_metric("调查状态", status_label(status), tone="info"),
             build_metric("关键发现", len(rendered_findings), tone="high"),
-            build_metric("严重/高危", severity_counts.get("critical", 0) + severity_counts.get("high", 0), tone="high"),
+            build_metric("高危", severity_counts.get("critical", 0) + severity_counts.get("high", 0), tone="high"),
             build_metric("中危", severity_counts.get("medium", 0), tone="medium"),
             build_metric("执行步骤", len(executed_steps), tone="info"),
             build_metric("阻塞步骤", len([step for step in executed_steps if step.get("status") == "blocked"]), tone="medium"),
@@ -3500,18 +3677,28 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 
 def render_severity_bar_chart(counts: dict[str, int]) -> str:
+    high_count = int(counts.get("critical", 0)) + int(counts.get("high", 0))
     labels = [
-        ("critical", "严重"),
         ("high", "高危"),
         ("medium", "中危"),
         ("low", "低危"),
         ("info", "信息"),
         ("unknown", "未知"),
     ]
-    max_value = max([int(counts.get(key, 0)) for key, _ in labels] + [1])
+    value_map = {
+        "high": high_count,
+        "medium": int(counts.get("medium", 0)),
+        "low": int(counts.get("low", 0)),
+        "info": int(counts.get("info", 0)),
+        "unknown": int(counts.get("unknown", 0)),
+    }
+    labels = [(key, label) for key, label in labels if value_map.get(key, 0) > 0]
+    if not labels:
+        return ""
+    max_value = max(list(value_map.values()) + [1])
     columns = []
     for key, label in labels:
-        value = int(counts.get(key, 0))
+        value = value_map[key]
         height = max(8, round((value / max_value) * 180)) if value > 0 else 8
         columns.append(
             "<div class='bar-col'>"
@@ -3527,7 +3714,7 @@ def render_severity_bar_chart(counts: dict[str, int]) -> str:
 
 def render_named_bar_chart(items: list[dict[str, Any]]) -> str:
     if not items:
-        return "<div class='empty'>暂无统计数据</div>"
+        return ""
     max_value = max([int(item.get("count", 0)) for item in items] + [1])
     rows: list[str] = []
     for item in items:
@@ -3552,6 +3739,8 @@ def render_chart_summary(chart_summary: dict[str, Any]) -> str:
         body = render_severity_bar_chart(ensure_dict(chart_summary.get("counts")))
     else:
         body = render_named_bar_chart(chart_summary.get("items", []))
+    if not body:
+        return ""
     return "<div class='charts-grid charts-grid-single'><section class='chart-card'><h2>" + escape(title) + "</h2>" + body + "</section></div>"
 
 
@@ -3622,11 +3811,14 @@ def render_output_cards(output_cards: list[dict[str, Any]]) -> str:
     for card in output_cards:
         href = card.get("href") or "#"
         note = stringify_value(card.get("note"))
+        meta_parts = [f"records={card.get('record_count')}"]
+        if card.get("flagged_label"):
+            meta_parts.append(f"{escape(stringify_value(card.get('flagged_label')))}={card.get('flagged_count')}")
         cards.append(
             "<section class='output-card'>"
             "<div class='output-card-header'>"
             f"<h3><a href='{escape(href)}'>{escape(stringify_value(card.get('path')))}</a></h3>"
-            f"<div class='output-meta'>records={card.get('record_count')} / {escape(stringify_value(card.get('flagged_label')))}={card.get('flagged_count')}</div>"
+            f"<div class='output-meta'>{' / '.join(meta_parts)}</div>"
             "</div>"
             + (f"<div class='muted'>{escape(note)}</div>" if note else "")
             + "</section>"
