@@ -46,7 +46,7 @@ description: 基于调查目标自动选择并串行执行固定的 C-Eyes 调�
 4. 每完成一步，先读取该步的 `summary.json`，再读取 `manifest.json`。
 5. 如果某一步被权限、运行时缺失或参数缺失阻塞，直接记录阻塞原因并停止链路推进。
 6. 如果当前结果已经足以回答用户问题，就停止，不要为了“更全”而继续跑后续步骤。
-7. 顶层结果完成后，先查看 `report_result/summary.md` 或 `report_result/report.html`，需要证据下钻时再回到 JSON 和 `steps/`。
+7. 顶层结果完成后，先查看 `report_result/report.html`，再看 `report_result/summary.md` 和 `report_result/report.xlsx`，需要证据下钻时再回到 JSON 和 `steps/`。
 
 固定链和停止条件分别见：
 

@@ -74,8 +74,9 @@ description: C-Eyes 的统一入口 skill。用于先判断请求属于单次扫
 
 无论路由到哪种下层 skill，执行完成后都先查看对应任务工作目录下的 `report_result/`：
 
-1. `report_result/summary.md`
-2. `report_result/report.html`
+1. `report_result/report.html`
+2. `report_result/summary.md`
+3. `report_result/report.xlsx`
 3. 只有需要证据下钻时，再回到原始 JSON 和 `outputs/`
 
 ## 资源

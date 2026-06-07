@@ -69,6 +69,7 @@ workspace/<task>/report_result/
 - `report.json`
 - `summary.md`
 - `report.html`
+- `report.xlsx`
 
 ## 使用说明
 
@@ -98,7 +99,7 @@ workspace/<task>/report_result/
 - workspace：当前目录下的 workspace/host-triage
 - runtime：默认自动下载到 .\runtime
 - 先做 dry-run，再正式执行
-- 执行后优先读取 workspace/host-triage/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/host-triage/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 可疑文件或目录扫描
@@ -113,7 +114,7 @@ workspace/<task>/report_result/
 - target-path：xxxxx
 - workspace：当前目录下的 workspace/filescan-risk
 - runtime：默认自动下载到 .\runtime
-- 执行后优先读取 workspace/filescan-risk/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/filescan-risk/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 事件日志时间线导出
@@ -128,7 +129,7 @@ workspace/<task>/report_result/
 - workspace：当前目录下的 workspace/eventlog-timeline
 - runtime：默认自动下载到 .\runtime
 - time-window：24h
-- 执行后优先读取 workspace/eventlog-timeline/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/eventlog-timeline/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 内网资产盘点
@@ -143,7 +144,7 @@ workspace/<task>/report_result/
 - workspace：当前目录下的 workspace/network-inventory
 - runtime：默认自动下载到 .\runtime
 - 只有在我明确要求时才使用 reachable-segments
-- 执行后优先读取 workspace/network-inventory/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/network-inventory/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### SBOM / 软件组成清单采集
@@ -158,7 +159,7 @@ workspace/<task>/report_result/
 - target-path：xxxxx（web-path）
 - workspace：当前目录下的 workspace/sbom-inventory
 - runtime：默认自动下载到 .\runtime
-- 执行后优先读取 workspace/sbom-inventory/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/sbom-inventory/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 主机安全基线核查
@@ -173,7 +174,7 @@ workspace/<task>/report_result/
 - workspace：当前目录下的 workspace/baseline-check
 - runtime：默认自动下载到 .\runtime
 - baseline-level：number (可选1/2/3/4 四个级别)
-- 执行后优先读取 workspace/baseline-check/report_result/summary.md 和 report.html
+- 执行后优先读取 workspace/baseline-check/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 文件告警自动调查
@@ -189,7 +190,7 @@ workspace/<task>/report_result/
 - target-path：xxxxxx
 - workspace：当前目录下的 workspace/auto-file-investigation
 - runtime：默认自动下载到 .\runtime
-- 最终优先读取 workspace/auto-file-investigation/report_result/summary.md 和 report.html
+- 最终优先读取 workspace/auto-file-investigation/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 主机异常自动调查
@@ -204,7 +205,7 @@ workspace/<task>/report_result/
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/auto-host-investigation
 - runtime：默认自动下载到 .\runtime
-- 最终优先读取 workspace/auto-host-investigation/report_result/summary.md 和 report.html
+- 最终优先读取 workspace/auto-host-investigation/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ### 基线异常自动调查
@@ -219,15 +220,16 @@ workspace/<task>/report_result/
 - 操作系统：Windows 或 Linux
 - workspace：当前目录下的 workspace/auto-baseline-investigation
 - runtime：默认自动下载到 .\runtime
-- 最终优先读取 workspace/auto-baseline-investigation/report_result/summary.md 和 report.html
+- 最终优先读取 workspace/auto-baseline-investigation/report_result/report.html，其次再看 summary.md 和 report.xlsx
 ```
 
 ## 看结果
 
 所有任务执行完成后，先看对应任务目录下的：
 
-- `report_result/summary.md`
 - `report_result/report.html`
+- `report_result/summary.md`
+- `report_result/report.xlsx`
 - `report_result/report.json`
 
 如果还需要下钻，再看下面这些原始结构化文件。

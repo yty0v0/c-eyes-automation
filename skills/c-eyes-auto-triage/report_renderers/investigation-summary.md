@@ -8,6 +8,8 @@
 
 - `report_result/report.json`
 - `report_result/summary.md`
+- `report_result/report.html`
+- `report_result/report.xlsx`
 - `decision.json`
 - `findings.json`
 - `next_actions.json`
@@ -26,8 +28,9 @@
 
 如果只是人工查看，优先直接打开：
 
-1. `report_result/summary.md`
-2. `report_result/report.html`
+1. `report_result/report.html`
+2. `report_result/summary.md`
+3. `report_result/report.xlsx`
 3. 必要时再回到上述 JSON 和 `steps/`
 
 ## 推荐输出结构

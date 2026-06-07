@@ -39,8 +39,9 @@ description: 通过隔离工作区和结构化清单编排 C-Eyes 公共运行�
    - Linux：`scripts/run-ceyes-linux.sh`
 4. 每次运行都要提供独立的 `workspace`。包装脚本会先确保当前平台运行时已经就绪，再复制到 `workspace/runtime/` 后执行，避免把可变运行时文件写回原始包目录。
 5. 执行后优先按这个顺序读取结果：
-   - `report_result/summary.md`
    - `report_result/report.html`
+   - `report_result/summary.md`
+   - `report_result/report.xlsx`
    - 需要下钻时再读 `summary.json`、`manifest.json` 和 `workspace/outputs/` 下对应 workflow 的输出文件
 6. 如果 preflight 报告权限不足、运行时缺失或目标不受支持，要直接返回这个阻塞条件，不要临时拼接替代命令。
 
@@ -95,7 +96,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\c-eyes-automation\skills\c
 
 ### 1. 先做主机排查
 
-适合“先看整机是否有异常”的场景。优先选择 `host-triage`，结果出来后先读 `report_result/summary.md`，再按需下钻 `manifest.json` 和输出路径。
+适合“先看整机是否有异常”的场景。优先选择 `host-triage`，结果出来后先读 `report_result/report.html`，再按需查看 `report.xlsx`、`manifest.json` 和输出路径。
 
 ### 2. 已知目录，直接扫文件
 
@@ -142,7 +143,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\c-eyes-automation\skills\c
 每次运行都会写出这些文件：
 
 - `run.json`：归一化后的请求参数
-- `report_result/`：最终人类可读报告目录，包含 `report.json`、`summary.md` 和 `report.html`
+- `report_result/`：最终人类可读报告目录，包含 `report.json`、`summary.md`、`report.html` 和 `report.xlsx`
 - `manifest.json`：preflight、运行时目标、执行命令、日志和状态
 - `summary.json`：给后续推理优先消费的摘要
 - `runtime/`：暂存后的公共运行时和运行时数据库文件

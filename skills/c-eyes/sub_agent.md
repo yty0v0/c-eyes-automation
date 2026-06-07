@@ -52,14 +52,16 @@
 
 如果委托给 direct workflow skill：
 
-1. 先读 `report_result/summary.md`
-2. 再读 `report_result/report.html`
+1. 先读 `report_result/report.html`
+2. 再读 `report_result/summary.md`
+3. 需要筛选和导出时再读 `report_result/report.xlsx`
 3. 需要下钻时再看 `summary.json`、`manifest.json` 和 `outputs/`
 
 如果委托给 `c-eyes-auto-triage`：
 
-1. 先读 `report_result/summary.md`
-2. 再读 `report_result/report.html`
+1. 先读 `report_result/report.html`
+2. 再读 `report_result/summary.md`
+3. 需要筛选和导出时再读 `report_result/report.xlsx`
 3. 需要结构化上下文时再读 `decision.json`、`findings.json`、`next_actions.json`
 4. 需要证据时再下钻 `steps/`
 

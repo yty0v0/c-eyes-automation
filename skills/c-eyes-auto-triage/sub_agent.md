@@ -49,15 +49,16 @@
 3. 不要直接调用原始 `c-eyes` CLI。
 4. 不要跳过 `c-eyes-orchestrator` 自己拼底层 workflow 命令。
 5. 每一步执行后，优先回读 `summary.json`，再回读 `manifest.json`。
-6. 顶层结果生成后，优先读取 `report_result/summary.md` 和 `report_result/report.html`。
+6. 顶层结果生成后，优先读取 `report_result/report.html`，其次读取 `report_result/summary.md` 和 `report_result/report.xlsx`。
 7. 结果已经足以回答问题时，可以停止，不需要把链上所有步骤强行跑完。
 
 ## 读取结果的顺序
 
 先读顶层产物：
 
-1. `report_result/summary.md`
-2. `report_result/report.html`
+1. `report_result/report.html`
+2. `report_result/summary.md`
+3. `report_result/report.xlsx`
 3. `decision.json`
 4. `findings.json`
 5. `next_actions.json`

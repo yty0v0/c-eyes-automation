@@ -9,6 +9,7 @@
 - `report_result/report.json`
 - `report_result/summary.md`
 - `report_result/report.html`
+- `report_result/report.xlsx`
 
 这组文件是面向人工查看的最终报告层。
 
@@ -66,8 +67,9 @@
 
 建议固定使用下面的顺序：
 
-1. `report_result/summary.md`
-2. `report_result/report.html`
+1. `report_result/report.html`
+2. `report_result/summary.md`
+3. `report_result/report.xlsx`
 3. `decision.json`
 4. `findings.json`
 5. `next_actions.json`
